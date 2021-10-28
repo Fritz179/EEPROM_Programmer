@@ -1,0 +1,12 @@
+{
+  "name": "16_Bit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./app/main.js",
+  "scripts": {
+    "start": "sudo nodemon ./app/main.js"
+  },
+  "author": "Fritz_179",
+  "license": "ISC",
+  "dependencies": {}
+}
