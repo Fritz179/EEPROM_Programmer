@@ -70,6 +70,29 @@ function writePin(pin, value) {
   fs.writeFileSync(`${PATH}/gpio${pin}/value`, value)
 }
 
+async function writeBytePin(value, startPin) {
+  const values = []
+  for (let i = 0; i < 8; i++) {
+    values[i] = value & (1 << i)
+  }
+
+  await Promise.all(values.map((val, i) => {
+    const pin = startPin + i
+    exportPin(pin)
+    setDirection(pin, 'out')
+
+    val = val ? '1' : '0'
+    debug(`Write: ${pin} = ${val}`)
+    return new Promise(resolve => {
+      fs.writeFile(`${PATH}/gpio${pin}/value`, val, resolve)
+    })
+  }))
+}
+
+function setDirectionByte() {
+
+}
+
 module.exports = {
-  readPin, writePin, exportPin, setDirection
+  readPin, writePin, exportPin, setDirection, writeBytePin
 }

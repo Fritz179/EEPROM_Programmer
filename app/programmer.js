@@ -1,4 +1,4 @@
-const {readPin, writePin} = require('./raspy');
+const {readPin, writePin, writeBytePin} = require('./raspy');
 const wait = require('./wait');
 const SECOND = 1000000
 
@@ -6,18 +6,18 @@ function cut(n, to) {
   return Math.floor(n * 10 ** to) / 10 ** to
 }
 
-module.exports = data => {
-  const len = data.length
+module.exports = async (data) => {
+  const len = data.filter(el => typeof el != 'undefined').length
 
   // Write
   const start = Date.now()
   console.log(`\nWriting start of: ${data.length} bytes\n`);
-  writeData(data)
+  await writeData(data)
 
   // Read
   const readStart = Date.now()
   console.log('Starting Readback\n');
-  const errors = checkData(data)
+  const errors = await checkData(data)
   const end = Date.now()
 
   if (!errors) {
@@ -38,22 +38,32 @@ module.exports = data => {
   console.log(`Read speed = ${readSpeed} bytes/s`);
 }
 
-function writeData(data) {
-  data.forEach((num, i) => {
-    writeAt(i, num)
-  })
+async function writeData(data) {
+  let counter = 0
+
+  for (let i = 0; i < data.length; i++) {
+    if (typeof data[i] == 'undefined') continue
+
+    counter++
+    await writeAt(i, data[i])
+  }
+
+  return counter
 }
 
-function checkData(data) {
+async function checkData(data) {
   let errors = 0
-  data.forEach((num, i) => {
-    const value = readAt(i)
-    if (value != num) {
+
+  for (let i = 0; i < data.length; i++) {
+    if (typeof data[i] == 'undefined') continue
+
+    const value = await readAt(i)
+    if (value != data[i]) {
       errors ++
       const at = i.toString(2).padStart(16, 0)
-      console.log(`Got value: ${value} but expected: ${num} at:0b`.padEnd(40, ' ') + at);
+      console.log(`Got value: ${value} but expected: ${data[i]} at:0b`.padEnd(40, ' ') + at);
     }
-  })
+  }
 
   return errors
 }
@@ -64,49 +74,50 @@ const highPinNum = 4
 const lowPinNum = 5
 const bit0PinNum = 8
 
-function writeAt(address, value) {
-  writeAddr(address)
-  writeByte(value)
+async function writeAt(address, value) {
+  await writeAddr(address)
+  await writeByte(value)
 
-  writePin(writePinNum, 0)
-  writePin(writePinNum, 1)
+  await writePin(writePinNum, 0)
+  await writePin(writePinNum, 1)
 }
 
-function readAt(address) {
-  writeAddr(address)
-  getByte()
-  writePin(readPinNum, 0)
-  const ret = getByte()
-  writePin(readPinNum, 1)
+async function readAt(address) {
+  await writeAddr(address)
+  await getByte()
+  await writePin(readPinNum, 0)
+  const ret = await getByte()
+  await writePin(readPinNum, 1)
   return ret
 }
 
-function writeAddr(address) {
-  writeByte(address & 255)
+async function writeAddr(address) {
+  await writeByte(address & 255)
   wait(1250)
-  clock(lowPinNum)
-  writeByte((address >> 8) & 255)
+  await clock(lowPinNum)
+  await writeByte((address >> 8) & 255)
   wait(1250)
-  clock(highPinNum)
+  await clock(highPinNum)
 }
 
-function clock(pin) {
-  writePin(pin, false)
+async function clock(pin) {
+  await writePin(pin, false)
   wait(200)
-  writePin(pin, true)
+  await writePin(pin, true)
   wait(1250)
 }
 
-function writeByte(value) {
-  for (let i = 0; i < 8; i++) {
-    writePin(bit0PinNum + i, value & (1 << i))
-  }
+async function writeByte(value) {
+  await writeBytePin(value, bit0PinNum)
+  // for (let i = 0; i < 8; i++) {
+  //   writePin(bit0PinNum + i, value & (1 << i))
+  // }
 }
 
-function getByte(value) {
+async function getByte(value) {
   let ret = 0
   for (let i = 0; i < 8; i++) {
-    ret |= readPin(bit0PinNum + i) << i
+    ret |= await readPin(bit0PinNum + i) << i
   }
 
   return ret
