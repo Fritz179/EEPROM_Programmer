@@ -11,16 +11,19 @@ function cut(n, to) {
 module.exports = (data, name, rewrite) => {
   const path = PATH + name + '.hex'
   const exists = !rewrite && fs.existsSync(path)
-  const oldData = exists ? fs.readFileSync(path).toString().split(',').map(n => n ? parseInt('0x' + n) : null) : []
+  const parse = l => l.split(',').map(n => n ? parseInt('0x' + n) : null)
+  const oldData = exists ? parse(fs.readFileSync(path).toString()) : []
 
-  if (exists) console.log(`Using old EEPROM ${name}, use -r to rewrite all`)
+  if (exists) console.log(`\nUsing old EEPROM ${name}, use -r to rewrite all!`)
 
-  const len = data.filter(el => typeof el != 'undefined').length
+
+  const len = data.filter(el => el != null).length
 
   // Write
   const start = Date.now()
-  console.log(`\nWriting start of: ${data.length} bytes\n`)
+  console.log(`\nWriting start of: ${len} bytes`)
   const wlen = writeData(data, oldData)
+  if (wlen != len) console.log(`Written only ${wlen} bytes instead of ${len}\n`)
 
   // Read
   const readStart = Date.now()
@@ -39,22 +42,22 @@ module.exports = (data, name, rewrite) => {
   const totalTime = cut((end - start) / 1000, 3)
   const writePercent = cut(writeTime / totalTime * 100, 0)
   const writeSpeed = cut(wlen / writeTime, 0)
-  const readSpeed = cut(wlen / readTime, 0)
+  const readSpeed = cut(len / readTime, 0)
 
-  if (wlen != len) console.log(`Written only ${wlen} bytes instead of ${len}`)
   console.log(`Job done in ${totalTime} seconds, ${writePercent}% at writing`)
   console.log(`Write speed = ${writeSpeed} bytes/s`)
   console.log(`Read speed = ${readSpeed} bytes/s`)
 
   data.length = 2 ** 13
-  fs.writeFileSync(path, data.map(n => n.toString(16)).join(','))
+  const save = data.map(n => n != null ? n.toString(16) : '').join(',')
+  fs.writeFileSync(path, save)
 }
 
 function writeData(data, oldData) {
   let wlen = 0
 
   data.forEach((num, i) => {
-    if (num != oldData[i]) {
+    if (num != null && num != oldData[i]) {
       writeAt(i, num)
       wlen++
     } else {
@@ -67,11 +70,13 @@ function writeData(data, oldData) {
 function checkData(data) {
   let errors = 0
   data.forEach((num, i) => {
-    const value = readAt(i)
-    if (value != num) {
-      errors ++
-      const at = i.toString(2).padStart(16, 0)
-      console.log(`Got value: ${value} but expected: ${num} at:0b`.padEnd(40, ' ') + at)
+    if (num != null) {
+      const value = readAt(i)
+      if (value != num) {
+        errors ++
+        const at = i.toString(2).padStart(16, 0)
+        console.log(`Got value: ${value} but expected: ${num} at:0b`.padEnd(40, ' ') + at)
+      }
     }
   })
 

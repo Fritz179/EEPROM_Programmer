@@ -3,3 +3,6 @@ node_modules
 
 # stores last EEPROM states
 cache
+
+# store test files to write
+test

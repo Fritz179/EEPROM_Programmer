@@ -1,3 +1,5 @@
+const {basename} = require('path')
+const {readFileSync} = require('fs')
 const write = require('./programmer');
 
 function random(max) {
@@ -5,23 +7,26 @@ function random(max) {
 }
 
 const rewrite = process.argv.includes('-r')
-const i = process.argv.indexOf('-n')
-const name = i != -1 ? process.argv[i + 1] : 'unnamed'
+const i = process.argv.indexOf('-i')
+const name = process.argv[i + 1]
+if (!i || !name) logHelp()
 
-async function main() {
-  const data = []
+if (process.argv.indexOf('-h') != -1) logHelp()
 
-  for (let i = 0; i < 2 ** 8; i++) {
-    data[random(2**13)] = random(255)
-  }
-  for (let i = 0; i < 15; i++) {
-    data[i] = i
-  }
-  // for (let i = 0; i < 2 ** 13; i++) {
-  //   data[i] = random(255)
-  // }
+const arr = readFileSync(name).toString().split(',')
 
-  write(data, name, rewrite)
+const parse = n => Number.isNaN(parseInt('0x' + n)) ? null : parseInt('0x' + n)
+const data =  arr.map(parse)
+
+if (!data) logHelp()
+
+
+function logHelp() {
+  console.log(`Help page for Fritz EEPROM Programmer
+    -i <name>     Input file name to write
+    -r            Optional, used to force an entire rewrite `);
+  process.exit()
 }
 
-main()
+// Write data
+write(data, basename(name), rewrite)
