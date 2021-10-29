@@ -71,5 +71,5 @@ function writePin(pin, value) {
 }
 
 module.exports = {
-  readPin, writePin, exportPin, setDirection
+  readPin, writePin
 }
