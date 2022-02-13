@@ -4,9 +4,11 @@
   "description": "",
   "main": "./app/main.js",
   "scripts": {
-    "start": "sudo nodemon ./app/main.js",
+    "start": "sudo node ./app/main.js -s",
     "lb": "sudo node ./app/main.js -i test/low.hex",
-    "hb": "sudo node ./app/main.js -i test/high.hex"
+    "hb": "sudo node ./app/main.js -i test/high.hex",
+    "lbr": "sudo node ./app/main.js -i test/low.hex -r",
+    "hbr": "sudo node ./app/main.js -i test/high.hex -r"
   },
   "author": "Fritz_179",
   "license": "ISC",

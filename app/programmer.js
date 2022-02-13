@@ -51,6 +51,8 @@ module.exports = (data, name, rewrite) => {
   data.length = 2 ** 13
   const save = data.map(n => n != null ? n.toString(16) : '').join(',')
   fs.writeFileSync(path, save)
+
+  return errors
 }
 
 function writeData(data, oldData) {
