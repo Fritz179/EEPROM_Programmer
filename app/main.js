@@ -5,7 +5,14 @@ const write = require('./programmer');
 const http = require('http');
 
 if (process.argv.indexOf('-s') != -1) {
+
+  let occupied = false
   http.createServer(function (req, res) {
+    if (occupied) {
+      res.statusCode = 200
+      res.end('Success!');
+    }
+
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST');
     res.setHeader('Access-Control-Max-Age', 2592000); // 30 days
@@ -13,10 +20,22 @@ if (process.argv.indexOf('-s') != -1) {
     let data = '';
     req.on('data', chunk => data += chunk)
     req.on('end', () => {
-      const bytes = JSON.parse(data)
+
+      let bytes
+
+      try {
+        bytes = JSON.parse(data)
+      } catch (error) {
+        res.statusCode = 400
+        console.log('Invalid data: ' + data);
+        res.end('Error: Invalid data: ' + data);
+        return
+      }
 
       console.log('Issued writing command\n');
+      occupied = true
       const errors = write(bytes, 'webservice', true)
+      occupied = false
       console.log('\nWaiting for new commands');
 
       if (errors) {
